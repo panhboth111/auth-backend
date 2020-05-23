@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const configs = require("../../utilities/configs");
 module.exports = (router) => {
   router.post("/auth/signup", async (req, res) => {
+    console.log(req.body);
     try {
       // destructuring the username and password from the req.body
       const { username, password } = req.body;
@@ -10,14 +11,15 @@ module.exports = (router) => {
       // if a user with the username is found, it means the username is already taken
       const userExists = await User.findOne({ username });
       if (userExists) {
-        return res.json("Username is already taken");
+        return res.json({ success: false, msg: "Username is already taken" });
       }
       //save user into the database
       const newUser = new User({ username, password });
       await newUser.save();
-      return res.json("Signed up successfully!");
+      return res.json({ success: true, msg: "Signed up successfully!" });
     } catch (error) {
-      return res.json(err.message);
+      console.log(error.message);
+      return res.json({ success: false, msg: error.message });
     }
   });
   router.post("/auth/signin", async (req, res) => {
@@ -27,12 +29,20 @@ module.exports = (router) => {
       //if no user is found, it means the given username is incorrect
       const userExists = await User.findOne({ username });
       if (!userExists) {
-        return res.json("Incorrect username!");
+        return res.json({
+          success: false,
+          msg: "Incorrect username!",
+          token: null,
+        });
       }
       //creating a token which is composed of the username and password, and uses a JWT_SECRET key to encrypt it
       const token = jwt.sign({ username, password }, configs.JWT_SECRET);
       //return the token to the frontend
-      return res.json(token);
-    } catch (error) {}
+
+      return res.json({ success: true, msg: "signed in successfully", token });
+    } catch (error) {
+      console.log(error.message);
+      return res.json({ success: false, msg: error.message, token: null });
+    }
   });
 };
